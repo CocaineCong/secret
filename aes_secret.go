@@ -11,23 +11,25 @@ import (
 	"github.com/spf13/cast"
 )
 
-var BaseSpecialSign = "!@a%$bc.de,l%$fgqweruriskn&#@xl784zm321apgiw"
-var BaseSpecialSignLength = len(BaseSpecialSign)
+const AesKeyLength = 16
+
+var AesBaseSpecialSign = "!@a%$bc.de,l%$fgqweruriskn&#@xl784zm321apgiw"
+var AesBaseSpecialSignLength = len(AesBaseSpecialSign)
 
 type AesEncrypt16 struct {
-	SpecialSign string // 加解密都会基于这一串字符,如果没有会基于 BaseSpecialSign.
+	SpecialSign string // 加解密都会基于这一串字符,如果没有会基于 AesBaseSpecialSign.
 	Key         string // 密钥，建议是 5-8位的密钥
 }
 
 func NewAesEncrypt16(specialSign, key string) (*AesEncrypt16, error) {
 	if specialSign == "" {
-		specialSign = BaseSpecialSign
+		specialSign = AesBaseSpecialSign
 	}
-	if len(specialSign) < 16 {
+	if len(specialSign) < AesKeyLength {
 		if len(specialSign)%2 == 0 {
-			specialSign += BaseSpecialSign[:16-len(specialSign)]
+			specialSign += AesBaseSpecialSign[:AesKeyLength-len(specialSign)]
 		} else {
-			specialSign += BaseSpecialSign[BaseSpecialSignLength-len(specialSign):]
+			specialSign += AesBaseSpecialSign[AesBaseSpecialSignLength-len(specialSign):]
 		}
 	}
 	if key == "" {
@@ -50,8 +52,8 @@ func (a *AesEncrypt16) getPrefix(length int) string {
 // GenerateAesKey 生成AES密钥
 func (a *AesEncrypt16) generateAesKey(id interface{}) []byte {
 	idStr := cast.ToString(id)
-	length := 16 - len(idStr) - len(a.Key)
-	buf := make([]byte, 0, 16)
+	length := AesKeyLength - len(idStr) - len(a.Key)
+	buf := make([]byte, 0, AesKeyLength)
 	prefix := a.getPrefix(length)
 	buf = append(buf, []byte(prefix)...)
 	buf = append(buf, []byte(idStr)...)
