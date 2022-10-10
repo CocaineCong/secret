@@ -1,7 +1,6 @@
 package secret
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/hex"
@@ -125,16 +124,4 @@ func (a *AesEncrypt) aesDecrypt(decodeStr string, key []byte) ([]byte, error) {
 	blockMode.CryptBlocks(origData, decodeBytes)
 	origData = pkcs5UnPadding(origData)
 	return origData, nil
-}
-
-func pkcs5Padding(ciphertext []byte, blockSize int) []byte {
-	padding := blockSize - len(ciphertext)%blockSize
-	padText := bytes.Repeat([]byte{byte(padding)}, padding)
-	return append(ciphertext, padText...)
-}
-
-func pkcs5UnPadding(origData []byte) []byte {
-	length := len(origData)
-	unpadding := int(origData[length-1])
-	return origData[:(length - unpadding)]
 }
