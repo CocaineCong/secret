@@ -21,14 +21,14 @@ type DesEncrypt struct {
 
 func NewDesEncrypt(specialSign, key string) (*DesEncrypt, error) {
 	if specialSign == "" {
-		specialSign = AesBaseSpecialSign
+		specialSign = DesBaseSpecialSign
 	}
 	specialSignLength := len(specialSign)
 	if len(specialSign) < DesKeyLength { // 小于8位填充
 		if len(specialSign)%2 == 0 {
-			specialSign += AesBaseSpecialSign[:DesKeyLength-specialSignLength]
+			specialSign += DesBaseSpecialSign[:DesKeyLength-specialSignLength]
 		} else {
-			specialSign += AesBaseSpecialSign[DesBaseSpecialSignLength-specialSignLength:]
+			specialSign += DesBaseSpecialSign[DesBaseSpecialSignLength-specialSignLength:]
 		}
 	} else if len(specialSign) > DesKeyLength { // 大于8位去除
 		if len(specialSign)%2 == 0 {
@@ -46,7 +46,7 @@ func NewDesEncrypt(specialSign, key string) (*DesEncrypt, error) {
 	}, nil
 }
 
-// GetPrefix 根据长短来判断前缀
+// getPrefix 根据长短来判断前缀
 func (d *DesEncrypt) getPrefix(length int) string {
 	if len(d.SpecialSign)%2 == 0 {
 		return d.SpecialSign[len(d.SpecialSign)-length:]
@@ -54,7 +54,7 @@ func (d *DesEncrypt) getPrefix(length int) string {
 	return d.SpecialSign[:length]
 }
 
-// GenerateDesKey 生成DES密钥
+// generateDesKey 生成DES密钥
 func (d *DesEncrypt) generateDesKey(id interface{}) []byte {
 	idStr := cast.ToString(id)
 	length := DesKeyLength - len(idStr) - len(d.Key)
@@ -77,7 +77,6 @@ func (d *DesEncrypt) SecretEncrypt(secret interface{}, fields ...interface{}) (s
 	}
 	if secret != "" {
 		desKey := d.generateDesKey(number)
-		fmt.Println("desKey", desKey)
 		ans, err := d.desEncrypt(cast.ToString(secret), desKey)
 		if err != nil {
 			return "", err
