@@ -60,7 +60,7 @@ func (a *AesEncrypt) generateAesKey(id interface{}) []byte {
 	return buf
 }
 
-// SecretEncrypt 加密金额
+// SecretEncrypt 加密
 func (a *AesEncrypt) SecretEncrypt(secret interface{}, fields ...interface{}) string {
 	number := 0
 	for i := range fields {
