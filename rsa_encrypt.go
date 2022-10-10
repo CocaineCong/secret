@@ -36,8 +36,8 @@ func NewDefaultRsaEncrypt() *RsaEncrypt {
 		Bits:           RsaDefaultBits,
 		PublishKeyName: formatPubAndPriKeyName(RsaDefaultPublishKeyName),
 		PrivateKeyName: formatPubAndPriKeyName(RsaDefaultPrivateKeyName),
-		PublishKeyPath: defaultPath,
-		PrivateKeyPath: defaultPath,
+		PublishKeyPath: defaultPath + formatPubAndPriKeyName(RsaDefaultPublishKeyName),
+		PrivateKeyPath: defaultPath + formatPubAndPriKeyName(RsaDefaultPublishKeyName),
 	}
 }
 
@@ -50,13 +50,13 @@ func NewRsaEncrypt(bits int, publishKeyName, publishKeyPath, privateKeyName, pri
 		obj.PublishKeyName = formatPubAndPriKeyName(publishKeyName)
 	}
 	if publishKeyPath != "" {
-		obj.PublishKeyPath = publishKeyPath
+		obj.PublishKeyPath = publishKeyPath + formatPubAndPriKeyName(publishKeyName)
 	}
 	if privateKeyName != "" {
 		obj.PrivateKeyName = formatPubAndPriKeyName(privateKeyName)
 	}
 	if privateKeyPath != "" {
-		obj.PrivateKeyPath = privateKeyPath
+		obj.PrivateKeyPath = privateKeyPath + formatPubAndPriKeyName(privateKeyName)
 	}
 	return obj
 }
@@ -80,7 +80,7 @@ func (r *RsaEncrypt) SaveRsaKey() error {
 	blockPublic := pem.Block{Type: PublishKey, Bytes: x509Public}
 
 	// 创建存放私钥的文件
-	privateFile, errPri := os.Create(r.PrivateKeyPath + r.PrivateKeyName)
+	privateFile, errPri := os.Create(r.PrivateKeyPath)
 	if errPri != nil {
 		return errPri
 	}
@@ -91,7 +91,7 @@ func (r *RsaEncrypt) SaveRsaKey() error {
 	}
 
 	// 创建存放公钥的文件
-	publicFile, errPub := os.Create("publicKey.pem")
+	publicFile, errPub := os.Create(r.PublishKeyPath)
 	if errPub != nil {
 		return errPub
 	}
