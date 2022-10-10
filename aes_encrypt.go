@@ -16,12 +16,12 @@ const AesKeyLength = 16
 var AesBaseSpecialSign = "!@a%$bc.de,l%$fgqweruriskn&#@xl784zm321apgiw"
 var AesBaseSpecialSignLength = len(AesBaseSpecialSign)
 
-type AesEncrypt16 struct {
+type AesEncrypt struct {
 	SpecialSign string // 加解密都会基于这一串字符,如果没有会基于 AesBaseSpecialSign.
 	Key         string // 密钥，建议是 5-8位的密钥
 }
 
-func NewAesEncrypt16(specialSign, key string) (*AesEncrypt16, error) {
+func NewAesEncrypt(specialSign, key string) (*AesEncrypt, error) {
 	if specialSign == "" {
 		specialSign = AesBaseSpecialSign
 	}
@@ -35,14 +35,14 @@ func NewAesEncrypt16(specialSign, key string) (*AesEncrypt16, error) {
 	if key == "" {
 		return nil, errors.New("need the key to encrypt, please add it. ")
 	}
-	return &AesEncrypt16{
+	return &AesEncrypt{
 		SpecialSign: specialSign,
 		Key:         key,
 	}, nil
 }
 
 // GetPrefix 根据长短来判断前缀
-func (a *AesEncrypt16) getPrefix(length int) string {
+func (a *AesEncrypt) getPrefix(length int) string {
 	if len(a.SpecialSign)%2 == 0 {
 		return a.SpecialSign[len(a.SpecialSign)-length:]
 	}
@@ -50,7 +50,7 @@ func (a *AesEncrypt16) getPrefix(length int) string {
 }
 
 // GenerateAesKey 生成AES密钥
-func (a *AesEncrypt16) generateAesKey(id interface{}) []byte {
+func (a *AesEncrypt) generateAesKey(id interface{}) []byte {
 	idStr := cast.ToString(id)
 	length := AesKeyLength - len(idStr) - len(a.Key)
 	buf := make([]byte, 0, AesKeyLength)
@@ -62,7 +62,7 @@ func (a *AesEncrypt16) generateAesKey(id interface{}) []byte {
 }
 
 // SecretEncrypt 加密金额
-func (a *AesEncrypt16) SecretEncrypt(secret interface{}, fields ...interface{}) string {
+func (a *AesEncrypt) SecretEncrypt(secret interface{}, fields ...interface{}) string {
 	number := 0
 	for i := range fields {
 		number += fields[i].(int)
@@ -76,7 +76,7 @@ func (a *AesEncrypt16) SecretEncrypt(secret interface{}, fields ...interface{}) 
 }
 
 // SecretDecrypt 解密
-func (a *AesEncrypt16) SecretDecrypt(secret interface{}, fields ...interface{}) string {
+func (a *AesEncrypt) SecretDecrypt(secret interface{}, fields ...interface{}) string {
 	number := 0
 	for i := range fields {
 		number += fields[i].(int)
@@ -90,7 +90,7 @@ func (a *AesEncrypt16) SecretDecrypt(secret interface{}, fields ...interface{}) 
 }
 
 // AesEncrypt AES加密
-func (a *AesEncrypt16) aesEncrypt(encodeStr string, key []byte) (string, error) {
+func (a *AesEncrypt) aesEncrypt(encodeStr string, key []byte) (string, error) {
 	encodeByte := []byte(encodeStr)
 	// 根据key，生成密文
 	block, err := aes.NewCipher(key)
@@ -110,7 +110,7 @@ func (a *AesEncrypt16) aesEncrypt(encodeStr string, key []byte) (string, error) 
 }
 
 // AesDecrypt AES 解密
-func (a *AesEncrypt16) aesDecrypt(decodeStr string, key []byte) ([]byte, error) {
+func (a *AesEncrypt) aesDecrypt(decodeStr string, key []byte) ([]byte, error) {
 	decodeBytes, err := hex.DecodeString(decodeStr)
 	if err != nil {
 		return nil, err
