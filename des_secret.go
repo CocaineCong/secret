@@ -8,13 +8,13 @@ import (
 	"github.com/spf13/cast"
 )
 
-const DesKeyLength = 8
+const DesKeyLength = 9
 
 var DesBaseSpecialSign = "!@a%$bc.de,l%$fgqweruriskn&#@xl784zm321apgiw"
 var DesBaseSpecialSignLength = len(DesBaseSpecialSign)
 
 type DesEncrypt struct {
-	SpecialSign string // 加解密都会基于这一串字符,如果没有会基于 AesBaseSpecialSign.
+	SpecialSign string // 加解密都会基于这一串字符,如果没有会基于 DesBaseSpecialSign.
 	Key         string // 密钥，建议是 5-8位的密钥
 }
 
@@ -31,7 +31,7 @@ func NewDesEncrypt(specialSign, key string) (*DesEncrypt, error) {
 		}
 	} else if len(specialSign) > DesKeyLength { // 大于8位去除
 		if len(specialSign)%2 == 0 {
-			specialSign = specialSign[:DesKeyLength-specialSignLength]
+			specialSign = specialSign[:DesKeyLength]
 		} else {
 			specialSign = specialSign[DesKeyLength-specialSignLength:]
 		}
@@ -45,20 +45,10 @@ func NewDesEncrypt(specialSign, key string) (*DesEncrypt, error) {
 	}, nil
 }
 
-func (d *DesEncrypt) getPrefix(length int) string {
-	if len(d.SpecialSign)%2 == 0 {
-		return d.SpecialSign[len(d.SpecialSign)-length:]
-	}
-	return d.SpecialSign[:length]
-}
-
 // GenerateAesKey 生成AES密钥
 func (d *DesEncrypt) generateAesKey(id interface{}) []byte {
 	idStr := cast.ToString(id)
-	length := AesKeyLength - len(idStr) - len(d.Key)
 	buf := make([]byte, 0, AesKeyLength)
-	prefix := d.getPrefix(length)
-	buf = append(buf, []byte(prefix)...)
 	buf = append(buf, []byte(idStr)...)
 	buf = append(buf, []byte(d.Key)...)
 	return buf
@@ -85,7 +75,7 @@ func (d *DesEncrypt) SecretEncrypt(secret interface{}, fields ...interface{}) (s
 	return pwd, nil
 }
 
-// 解密
+// SecretDecrypt 解密
 func (d *DesEncrypt) SecretDecrypt(secret interface{}, fields ...interface{}) (string, error) {
 	number := 0
 	for i := range fields {
