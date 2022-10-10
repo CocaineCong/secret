@@ -32,7 +32,7 @@ func NewDesEncrypt(specialSign, key string) (*DesEncrypt, error) {
 		}
 	} else if len(specialSign) > DesKeyLength { // 大于8位去除
 		if len(specialSign)%2 == 0 {
-			specialSign = specialSign[:DesKeyLength]
+			specialSign = specialSign[:DesKeyLength+1]
 		} else {
 			specialSign = specialSign[DesKeyLength-specialSignLength:]
 		}
@@ -46,14 +46,25 @@ func NewDesEncrypt(specialSign, key string) (*DesEncrypt, error) {
 	}, nil
 }
 
+// GetPrefix 根据长短来判断前缀
+func (d *DesEncrypt) getPrefix(length int) string {
+	if len(d.SpecialSign)%2 == 0 {
+		return d.SpecialSign[len(d.SpecialSign)-length:]
+	}
+	return d.SpecialSign[:length]
+}
+
 // GenerateDesKey 生成DES密钥
 func (d *DesEncrypt) generateDesKey(id interface{}) []byte {
 	idStr := cast.ToString(id)
+	length := DesKeyLength - len(idStr) - len(d.Key)
 	buf := make([]byte, 0, DesKeyLength)
+	prefix := d.getPrefix(length)
+	buf = append(buf, []byte(prefix)...)
 	buf = append(buf, []byte(idStr)...)
 	buf = append(buf, []byte(d.Key)...)
-	if len(buf) > DesKeyLength {
-		buf = buf[:8]
+	if len(buf) > 8 {
+		buf = buf[:DesKeyLength+1]
 	}
 	return buf
 }
@@ -65,8 +76,9 @@ func (d *DesEncrypt) SecretEncrypt(secret interface{}, fields ...interface{}) (s
 		number += fields[i].(int)
 	}
 	if secret != "" {
-		aesKey := d.generateDesKey(number)
-		ans, err := d.desEncrypt(cast.ToString(secret), aesKey)
+		desKey := d.generateDesKey(number)
+		fmt.Println("desKey", desKey)
+		ans, err := d.desEncrypt(cast.ToString(secret), desKey)
 		if err != nil {
 			return "", err
 		}
