@@ -32,8 +32,20 @@ DES、3DES也是类似的
 
 RSA 我们需要指定密钥的长度，只能选择规定的密钥长度，在构建对象的时候，可以传入公私钥的名字和路径。如果没有传入名字，那么就是，如果没有传入路径，将会`默认放在当前工作目录的路径下`
 
-```go
+指定rsa加密对象，并且保存公私钥
 
+```go
+rsa := NewRsaEncrypt(RsaBits1024, "", "", "", "")
+_ = rsa.SaveRsaKey() // 保存公私钥
+```
+
+对密钥进行加解密，最好存储byte类型，因为string之后可能会乱码。
+
+```go
+secret, _ := rsa.RsaEncoding("this is a secret", rsa.PublishKeyPath)
+fmt.Println("secret", secret)
+ans, _ := rsa.RsaDecoding(secret, rsa.PrivateKeyPath)
+fmt.Println(string(ans))
 ```
 
 
