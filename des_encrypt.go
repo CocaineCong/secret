@@ -11,7 +11,7 @@ import (
 
 const DesKeyLength = 8
 
-var DesBaseSpecialSign = "!@a%$bc.de,l%$fgqweruriskn&#@xl784zm321apgiw"
+var DesBaseSpecialSign = "!%$brgil%$kn&weruxl7c.de,fq8zm32#@1a4pgiw@a"
 var DesBaseSpecialSignLength = len(DesBaseSpecialSign)
 
 type DesEncrypt struct {

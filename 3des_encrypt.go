@@ -12,7 +12,7 @@ import (
 const TripleDesKeyLength = 24
 const TripleDesKeyBlock = 8
 
-var TripleDesBaseSpecialSign = "!@a%$bc.de,l%$fgqweruriskn&#@xl784zm321apgiw"
+var TripleDesBaseSpecialSign = "!@abc$qwefgr.#n3@zmde,l%uri&%18$xl7g42askpiw"
 var TripleDesBaseSpecialSignLength = len(TripleDesBaseSpecialSign)
 
 type TripleDesEncrypt struct {
