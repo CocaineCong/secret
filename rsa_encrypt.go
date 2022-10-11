@@ -101,7 +101,12 @@ func (r *RsaEncrypt) SaveRsaKey() error {
 	if errPri != nil {
 		return errPri
 	}
-	defer privateFile.Close()
+	defer func(privateFile *os.File) {
+		errClose := privateFile.Close()
+		if errClose != nil {
+			panic(errClose)
+		}
+	}(privateFile)
 	err = pem.Encode(privateFile, &blockPrivate)
 	if err != nil {
 		return err
@@ -112,8 +117,6 @@ func (r *RsaEncrypt) SaveRsaKey() error {
 	if errPub != nil {
 		return errPub
 	}
-	fmt.Println("private", r.PrivateKeyPath)
-	fmt.Println("private", r.PublishKeyPath)
 	defer publicFile.Close()
 	err = pem.Encode(publicFile, &blockPublic)
 	if err != nil {
@@ -126,7 +129,6 @@ func (r *RsaEncrypt) SaveRsaKey() error {
 func (r *RsaEncrypt) RsaEncoding(src, filePath string) ([]byte, error) {
 	srcByte := []byte(src)
 	// 打开文件
-	fmt.Println("filePath RsaEncoding", filePath)
 	file, err := os.Open(filePath)
 	if err != nil {
 		return srcByte, err
@@ -159,7 +161,6 @@ func (r *RsaEncrypt) RsaEncoding(src, filePath string) ([]byte, error) {
 // RsaDecoding 解密
 func (r *RsaEncrypt) RsaDecoding(srcByte []byte, filePath string) ([]byte, error) {
 	// 打开文件
-	fmt.Println("filePath RsaDecoding", filePath)
 	file, err := os.Open(filePath)
 	if err != nil {
 		return srcByte, err
