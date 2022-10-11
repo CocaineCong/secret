@@ -22,9 +22,9 @@ aesEncrypt, _ := NewAesEncrypt(specialSign, key) // 构建一个aes加密器
 再传入我们的所需要加密的对象即可,目前只封装了CBC模式,后续我们会支持更多的模式。
 
 ```go
-str := aesEncrypt.SecretEncrypt("this is a secret", 12)
+str := aesEncrypt.SecretEncrypt("this is a secret")
 fmt.Println(str)
-ans := aesEncrypt.SecretDecrypt(str, 12)
+ans := aesEncrypt.SecretDecrypt(str)
 fmt.Println(ans)
 ```
 
@@ -51,6 +51,12 @@ fmt.Println("secret", secret)
 ans, _ := rsa.RsaDecoding(secret, rsa.PrivateKeyPath)
 fmt.Println(string(ans))
 ```
+
+# 开源共建
+
+**我们非常欢迎感兴趣的同学一起加入，共同维护这个secret包！**
+
+**`coding make secret secret`**
 
 
 # 一些疑问？
