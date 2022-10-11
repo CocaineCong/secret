@@ -3,6 +3,10 @@
 
 # 使用说明
 
+```go
+go get github.com/CocaineCong/secret
+```
+
 ## AES
 我们可以在代码中先指定一段特殊字符串`special sign`，并且传入我们的密钥`key`，来构造我们的AES加密对象。\
 我们会基于传进来的` special sign 和 key `进行一个`拼接来进行加密`，解密的时候，只需要用传入**相同的special sign和key**即可。
