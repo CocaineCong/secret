@@ -6,10 +6,10 @@ import (
 )
 
 func TestRsaEncrypt(t *testing.T) {
-	rsa := NewRsaEncrypt(1024, "", "", "", "")
-	rsa.SaveRsaKey()
+	rsa := NewRsaEncrypt(RsaBits1024, "", "", "", "")
+	_ = rsa.SaveRsaKey()
 	secret, _ := rsa.RsaEncoding("this is a secret", rsa.PublishKeyPath)
-	fmt.Println(string(secret))
+	fmt.Println("secret", secret)
 	ans, _ := rsa.RsaDecoding(secret, rsa.PrivateKeyPath)
 	fmt.Println(string(ans))
 }

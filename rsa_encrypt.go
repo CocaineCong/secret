@@ -9,25 +9,41 @@ import (
 	"os"
 )
 
+type RsaBitsType int
+
 const (
-	RsaDefaultBits           = 1024
+	RsaBits512     RsaBitsType = 512
+	RsaBits1024    RsaBitsType = 1024
+	RsaBits2048    RsaBitsType = 2048
+	RsaBits4096    RsaBitsType = 4096
+	RsaDefaultBits             = RsaBits1024
+)
+
+const (
 	RsaDefaultPublishKeyName = "publishKey"
 	RsaDefaultPrivateKeyName = "privateKey"
 
-	PublishKey = "publish key"
-	PrivateKey = "private key"
+	PublishKey = "PUBLIC KEY"
+	PrivateKey = "RSA PRIVATE KEY"
 )
 
 type RsaEncrypt struct {
-	Bits           int    // 定位大小的 RSA 密钥对
-	PublishKeyName string // 公钥名字
-	PrivateKeyName string // 私钥名字
-	PublishKeyPath string // 公钥的输出路径
-	PrivateKeyPath string // 私钥的输出路径
+	Bits           RsaBitsType // 定位大小的 RSA 密钥对
+	PublishKeyName string      // 公钥名字
+	PrivateKeyName string      // 私钥名字
+	PublishKeyPath string      // 公钥的输出路径
+	PrivateKeyPath string      // 私钥的输出路径
+}
+
+var RsaBitsMap = map[RsaBitsType]int{
+	RsaBits512:  512,
+	RsaBits1024: 1024,
+	RsaBits2048: 2048,
+	RsaBits4096: 4096,
 }
 
 func formatPubAndPriKeyName(name string) string {
-	return fmt.Sprintf("%s.pem", name)
+	return fmt.Sprintf("\\%s.pem", name)
 }
 
 func NewDefaultRsaEncrypt() *RsaEncrypt {
@@ -37,15 +53,16 @@ func NewDefaultRsaEncrypt() *RsaEncrypt {
 		PublishKeyName: formatPubAndPriKeyName(RsaDefaultPublishKeyName),
 		PrivateKeyName: formatPubAndPriKeyName(RsaDefaultPrivateKeyName),
 		PublishKeyPath: defaultPath + formatPubAndPriKeyName(RsaDefaultPublishKeyName),
-		PrivateKeyPath: defaultPath + formatPubAndPriKeyName(RsaDefaultPublishKeyName),
+		PrivateKeyPath: defaultPath + formatPubAndPriKeyName(RsaDefaultPrivateKeyName),
 	}
 }
 
-func NewRsaEncrypt(bits int, publishKeyName, publishKeyPath, privateKeyName, privateKeyPath string) *RsaEncrypt {
+func NewRsaEncrypt(bits RsaBitsType, publishKeyName, publishKeyPath, privateKeyName, privateKeyPath string) *RsaEncrypt {
 	obj := NewDefaultRsaEncrypt()
 	if bits != 0 {
 		obj.Bits = bits
 	}
+
 	if publishKeyName != "" {
 		obj.PublishKeyName = formatPubAndPriKeyName(publishKeyName)
 	}
@@ -63,7 +80,7 @@ func NewRsaEncrypt(bits int, publishKeyName, publishKeyPath, privateKeyName, pri
 
 // SaveRsaKey 保存生成的公钥和密钥
 func (r *RsaEncrypt) SaveRsaKey() error {
-	privateKey, err := rsa.GenerateKey(rand.Reader, r.Bits)
+	privateKey, err := rsa.GenerateKey(rand.Reader, RsaBitsMap[r.Bits])
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -95,6 +112,8 @@ func (r *RsaEncrypt) SaveRsaKey() error {
 	if errPub != nil {
 		return errPub
 	}
+	fmt.Println("private", r.PrivateKeyPath)
+	fmt.Println("private", r.PublishKeyPath)
 	defer publicFile.Close()
 	err = pem.Encode(publicFile, &blockPublic)
 	if err != nil {
@@ -107,6 +126,7 @@ func (r *RsaEncrypt) SaveRsaKey() error {
 func (r *RsaEncrypt) RsaEncoding(src, filePath string) ([]byte, error) {
 	srcByte := []byte(src)
 	// 打开文件
+	fmt.Println("filePath RsaEncoding", filePath)
 	file, err := os.Open(filePath)
 	if err != nil {
 		return srcByte, err
@@ -139,6 +159,7 @@ func (r *RsaEncrypt) RsaEncoding(src, filePath string) ([]byte, error) {
 // RsaDecoding 解密
 func (r *RsaEncrypt) RsaDecoding(srcByte []byte, filePath string) ([]byte, error) {
 	// 打开文件
+	fmt.Println("filePath RsaDecoding", filePath)
 	file, err := os.Open(filePath)
 	if err != nil {
 		return srcByte, err
