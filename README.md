@@ -1,8 +1,17 @@
 # coding make secret secret
+
+![banner](https://img.shields.io/aur/maintainer/secret)
+![go-version](https://img.shields.io/github/go-mod/go-version/CocaineCong/secret)
+[![license](https://img.shields.io/github/license/CocaineCong/secret.svg)](LICENSE)
+[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
+
+- zh_cn [简体中文](README.md)
+- en [English](README.EN.md)
+
+# 写在前面
 提供 对称加密 AES、DES、3DES 以及非对称加密 RSA 的上层封装接口，让您的敏感数据更加容易脱敏并存储
 
 # 使用说明
-
 ```go
 go get github.com/CocaineCong/secret
 ```
@@ -54,7 +63,7 @@ fmt.Println(string(ans))
 
 # 开源共建
 
-**我们非常欢迎感兴趣的同学一起加入，共同维护这个secret包！**
+**我们非常欢迎感兴趣的开发者一起加入，共同维护这个secret包！**
 
 **`coding make secret secret`**
 
