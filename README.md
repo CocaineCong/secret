@@ -1,4 +1,4 @@
-# coding make secret secret
+# Coding Make Secret Secret
 
 ![banner](https://img.shields.io/aur/maintainer/secret)
 ![go-version](https://img.shields.io/github/go-mod/go-version/CocaineCong/secret)
