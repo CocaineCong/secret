@@ -125,8 +125,8 @@ func (r *RsaEncrypt) SaveRsaKey() error {
 	return nil
 }
 
-// RsaEncoding 加密
-func (r *RsaEncrypt) RsaEncoding(src, filePath string) ([]byte, error) {
+// RsaEncrypt 加密
+func (r *RsaEncrypt) RsaEncrypt(src, filePath string) ([]byte, error) {
 	srcByte := []byte(src)
 	// 打开文件
 	file, err := os.Open(filePath)
@@ -158,8 +158,8 @@ func (r *RsaEncrypt) RsaEncoding(src, filePath string) ([]byte, error) {
 	return retByte, nil
 }
 
-// RsaDecoding 解密
-func (r *RsaEncrypt) RsaDecoding(srcByte []byte, filePath string) ([]byte, error) {
+// RsaDecrypt 解密
+func (r *RsaEncrypt) RsaDecrypt(srcByte []byte, filePath string) ([]byte, error) {
 	// 打开文件
 	file, err := os.Open(filePath)
 	if err != nil {
