@@ -55,9 +55,9 @@ _ = rsa.SaveRsaKey() // 保存公私钥
 对密钥进行加解密，最好存储byte类型，因为string之后可能会乱码。
 
 ```go
-secret, _ := rsa.RsaEncoding("this is a secret", rsa.PublishKeyPath)
+secret, _ := rsa.RsaEncrypt("this is a secret", rsa.PublishKeyPath)
 fmt.Println("secret", secret)
-ans, _ := rsa.RsaDecoding(secret, rsa.PrivateKeyPath)
+ans, _ := rsa.RsaDecrypt(secret, rsa.PrivateKeyPath)
 fmt.Println(string(ans))
 ```
 
