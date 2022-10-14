@@ -43,7 +43,7 @@ var RsaBitsMap = map[RsaBitsType]int{
 }
 
 func formatPubAndPriKeyName(name string) string {
-	return fmt.Sprintf("\\%s.pem", name)
+	return fmt.Sprintf("/%s.pem", name)
 }
 
 func NewDefaultRsaEncrypt() *RsaEncrypt {
