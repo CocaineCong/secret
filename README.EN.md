@@ -29,6 +29,7 @@ go get github.com/CocaineCong/secret
 ```
 
 ## Usage
+### AES
 We can use a special string `special sign` and `key` in our code to construct our AES encryption object. \
 
 ```go
@@ -50,7 +51,23 @@ fmt.Println(ans)
 In this way, we have completed an encryption and decryption. \
 DES and 3DES are also similar.
 
+### RSA
+RSA we need to specify `the length of the key`, can only select `the specified length of the key`, when building the object, you can input` the name and path of the public and private key`. If no name is input, the default `public key is publish.pem and the private key is private.pem`. If no path is passed in, it will `default to the path of the current working directory`
 
+Specify an rsa encryption object and save the public and private keys
+
+```go
+rsa := NewRsaEncrypt(RsaBits1024, "", "", "", "")
+_ = rsa.SaveRsaKey() // save the publish.pem and private.pem
+```
+
+
+```go
+secret, _ := rsa.RsaEncrypt("this is a secret", rsa.PublishKeyPath)
+fmt.Println("secret", secret)
+ans, _ := rsa.RsaDecrypt(secret, rsa.PrivateKeyPath)
+fmt.Println(string(ans))
+```
 
 ## Contributing
 We very much welcome interested developers to join and maintain this secret package together!
