@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/spf13/cast"
 )
@@ -25,7 +26,8 @@ func NewAesEncrypt(specialSign, key string) (*AesEncrypt, error) {
 		specialSign = AesBaseSpecialSign
 	}
 	specialSignLength := len(specialSign)
-	if specialSignLength < AesKeyLength {
+	if specialSignLength+len(key) < AesKeyLength {
+		log.Printf("the length of specialSign and key less %v ", TripleDesKeyLength)
 		if specialSignLength%2 == 0 {
 			specialSign += AesBaseSpecialSign[:AesKeyLength-len(specialSign)]
 		} else {

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spf13/cast"
+	"log"
 )
 
 const TripleDesKeyLength = 24
@@ -25,14 +26,15 @@ func NewTripleDesEncrypt(specialSign, key string) (*TripleDesEncrypt, error) {
 		specialSign = TripleDesBaseSpecialSign
 	}
 	specialSignLength := len(specialSign)
-	if len(specialSign) < TripleDesKeyLength { // 小于24位填充
-		if len(specialSign)%2 == 0 {
+	if specialSignLength+len(key) < TripleDesKeyLength { // 小于24位填充
+		log.Printf("the length of specialSign and key less %v ", TripleDesKeyLength)
+		if specialSignLength%2 == 0 {
 			specialSign += TripleDesBaseSpecialSign[:TripleDesKeyLength-specialSignLength]
 		} else {
 			specialSign += TripleDesBaseSpecialSign[TripleDesBaseSpecialSignLength-specialSignLength:]
 		}
-	} else if len(specialSign) > TripleDesKeyLength { // 大于24位去除
-		if len(specialSign)%2 == 0 {
+	} else if specialSignLength > TripleDesKeyLength { // 大于24位去除
+		if specialSignLength%2 == 0 {
 			specialSign = specialSign[:TripleDesKeyLength+1]
 		} else {
 			specialSign = specialSign[specialSignLength-TripleDesKeyLength:]

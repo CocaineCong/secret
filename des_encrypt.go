@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spf13/cast"
+	"log"
 )
 
 const DesKeyLength = 8
@@ -24,8 +25,9 @@ func NewDesEncrypt(specialSign, key string) (*DesEncrypt, error) {
 		specialSign = DesBaseSpecialSign
 	}
 	specialSignLength := len(specialSign)
-	if specialSignLength < DesKeyLength { // 小于8位填充
+	if specialSignLength+len(key) < DesKeyLength { // 小于8位填充
 		if specialSignLength%2 == 0 {
+			log.Printf("the length of specialSign and key less %v ", DesKeyLength)
 			specialSign += DesBaseSpecialSign[:DesKeyLength-specialSignLength]
 		} else {
 			specialSign += DesBaseSpecialSign[DesBaseSpecialSignLength-specialSignLength:]
