@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"os"
@@ -126,18 +127,18 @@ func (r *RsaEncrypt) SaveRsaKey() error {
 }
 
 // RsaEncrypt 加密
-func (r *RsaEncrypt) RsaEncrypt(src, filePath string) ([]byte, error) {
+func (r *RsaEncrypt) RsaEncrypt(src, filePath string) (string, error) {
 	srcByte := []byte(src)
 	// 打开文件
 	file, err := os.Open(filePath)
 	if err != nil {
-		return srcByte, err
+		return "", err
 	}
 
 	// 获取文件信息
 	fileInfo, errInfo := file.Stat()
 	if errInfo != nil {
-		return srcByte, errInfo
+		return "", errInfo
 	}
 	// 读取文件内容
 	keyBytes := make([]byte, fileInfo.Size())
@@ -148,27 +149,27 @@ func (r *RsaEncrypt) RsaEncrypt(src, filePath string) ([]byte, error) {
 	// x509解码
 	publicKey, errPb := x509.ParsePKCS1PublicKey(block.Bytes)
 	if errPb != nil {
-		return srcByte, errPb
+		return "", errPb
 	}
 	// 使用公钥对明文进行加密
 	retByte, errRet := rsa.EncryptPKCS1v15(rand.Reader, publicKey, srcByte)
 	if errRet != nil {
-		return srcByte, errRet
+		return "", errRet
 	}
-	return retByte, nil
+	return base64.StdEncoding.EncodeToString(retByte), nil
 }
 
 // RsaDecrypt 解密
-func (r *RsaEncrypt) RsaDecrypt(srcByte []byte, filePath string) ([]byte, error) {
+func (r *RsaEncrypt) RsaDecrypt(srcByte []byte, filePath string) (string, error) {
 	// 打开文件
 	file, err := os.Open(filePath)
 	if err != nil {
-		return srcByte, err
+		return "", err
 	}
 	// 获取文件信息
 	fileInfo, errInfo := file.Stat()
 	if errInfo != nil {
-		return srcByte, errInfo
+		return "", errInfo
 	}
 	// 读取文件内容
 	keyBytes := make([]byte, fileInfo.Size())
@@ -179,12 +180,12 @@ func (r *RsaEncrypt) RsaDecrypt(srcByte []byte, filePath string) ([]byte, error)
 	// x509解码
 	privateKey, errPb := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if errPb != nil {
-		return keyBytes, errPb
+		return "", errPb
 	}
 	// 进行解密
 	retByte, errRet := rsa.DecryptPKCS1v15(rand.Reader, privateKey, srcByte)
 	if errRet != nil {
-		return srcByte, errRet
+		return "", errRet
 	}
-	return retByte, nil
+	return base64.StdEncoding.EncodeToString(retByte), nil
 }

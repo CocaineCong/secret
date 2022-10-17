@@ -35,7 +35,7 @@ func NewTripleDesEncrypt(specialSign, key string) (*TripleDesEncrypt, error) {
 		if len(specialSign)%2 == 0 {
 			specialSign = specialSign[:TripleDesKeyLength+1]
 		} else {
-			specialSign = specialSign[TripleDesKeyLength-specialSignLength:]
+			specialSign = specialSign[specialSignLength-TripleDesKeyLength:]
 		}
 	}
 	if key == "" {
