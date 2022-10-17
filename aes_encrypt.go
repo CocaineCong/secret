@@ -24,11 +24,19 @@ func NewAesEncrypt(specialSign, key string) (*AesEncrypt, error) {
 	if specialSign == "" {
 		specialSign = AesBaseSpecialSign
 	}
-	if len(specialSign) < AesKeyLength {
-		if len(specialSign)%2 == 0 {
+	specialSignLength := len(specialSign)
+	if specialSignLength < AesKeyLength {
+		if specialSignLength%2 == 0 {
 			specialSign += AesBaseSpecialSign[:AesKeyLength-len(specialSign)]
 		} else {
 			specialSign += AesBaseSpecialSign[AesBaseSpecialSignLength-AesKeyLength:]
+		}
+	}
+	if specialSignLength > AesKeyLength {
+		if specialSignLength%2 == 0 {
+			specialSign = specialSign[:AesKeyLength+1]
+		} else {
+			specialSign = specialSign[len(specialSign)-AesKeyLength:]
 		}
 	}
 	if key == "" {

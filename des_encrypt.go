@@ -24,17 +24,17 @@ func NewDesEncrypt(specialSign, key string) (*DesEncrypt, error) {
 		specialSign = DesBaseSpecialSign
 	}
 	specialSignLength := len(specialSign)
-	if len(specialSign) < DesKeyLength { // 小于8位填充
-		if len(specialSign)%2 == 0 {
+	if specialSignLength < DesKeyLength { // 小于8位填充
+		if specialSignLength%2 == 0 {
 			specialSign += DesBaseSpecialSign[:DesKeyLength-specialSignLength]
 		} else {
 			specialSign += DesBaseSpecialSign[DesBaseSpecialSignLength-specialSignLength:]
 		}
-	} else if len(specialSign) > DesKeyLength { // 大于8位去除
-		if len(specialSign)%2 == 0 {
+	} else if specialSignLength > DesKeyLength { // 大于8位去除
+		if specialSignLength%2 == 0 {
 			specialSign = specialSign[:DesKeyLength+1]
 		} else {
-			specialSign = specialSign[DesKeyLength-specialSignLength:]
+			specialSign = specialSign[specialSignLength-DesKeyLength:]
 		}
 	}
 	if key == "" {
