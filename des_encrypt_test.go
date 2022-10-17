@@ -6,7 +6,7 @@ import (
 )
 
 func TestDesSecret(t *testing.T) {
-	specialSign := "][;,[2psldp0981zx;./"
+	specialSign := ""
 	key := "458796" // key 密钥
 	des, _ := NewDesEncrypt(specialSign, key)
 	str, err := des.SecretEncrypt("this is a secret")

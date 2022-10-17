@@ -6,7 +6,7 @@ import (
 )
 
 func TestAesSecret(t *testing.T) {
-	specialSign := "][;,[2psldp0981zx;./"
+	specialSign := "asd"
 	key := "458796" // key 密钥
 	aesEncrypt, _ := NewAesEncrypt(specialSign, key)
 	str := aesEncrypt.SecretEncrypt("this is a secret", 12)

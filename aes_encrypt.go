@@ -28,7 +28,7 @@ func NewAesEncrypt(specialSign, key string) (*AesEncrypt, error) {
 		if len(specialSign)%2 == 0 {
 			specialSign += AesBaseSpecialSign[:AesKeyLength-len(specialSign)]
 		} else {
-			specialSign += AesBaseSpecialSign[AesBaseSpecialSignLength-len(specialSign):]
+			specialSign += AesBaseSpecialSign[AesBaseSpecialSignLength-AesKeyLength:]
 		}
 	}
 	if key == "" {
