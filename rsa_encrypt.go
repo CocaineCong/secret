@@ -44,7 +44,7 @@ var RsaBitsMap = map[RsaBitsType]int{
 }
 
 func formatPubAndPriKeyName(name string) string {
-	return fmt.Sprintf("/%s.pem", name)
+	return fmt.Sprintf("\\%s.pem", name)
 }
 
 func NewDefaultRsaEncrypt() *RsaEncrypt {
@@ -127,18 +127,18 @@ func (r *RsaEncrypt) SaveRsaKey() error {
 }
 
 // RsaEncrypt 加密
-func (r *RsaEncrypt) RsaEncrypt(src, filePath string) (string, error) {
+func (r *RsaEncrypt) RsaEncrypt(src, filePath string) ([]byte, error) {
 	srcByte := []byte(src)
 	// 打开文件
 	file, err := os.Open(filePath)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// 获取文件信息
 	fileInfo, errInfo := file.Stat()
 	if errInfo != nil {
-		return "", errInfo
+		return nil, errInfo
 	}
 	// 读取文件内容
 	keyBytes := make([]byte, fileInfo.Size())
@@ -149,27 +149,27 @@ func (r *RsaEncrypt) RsaEncrypt(src, filePath string) (string, error) {
 	// x509解码
 	publicKey, errPb := x509.ParsePKCS1PublicKey(block.Bytes)
 	if errPb != nil {
-		return "", errPb
+		return nil, errPb
 	}
 	// 使用公钥对明文进行加密
 	retByte, errRet := rsa.EncryptPKCS1v15(rand.Reader, publicKey, srcByte)
 	if errRet != nil {
-		return "", errRet
+		return nil, errRet
 	}
-	return base64.StdEncoding.EncodeToString(retByte), nil
+	return retByte, nil
 }
 
 // RsaDecrypt 解密
-func (r *RsaEncrypt) RsaDecrypt(srcByte []byte, filePath string) (string, error) {
+func (r *RsaEncrypt) RsaDecrypt(srcByte []byte, filePath string) ([]byte, error) {
 	// 打开文件
 	file, err := os.Open(filePath)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	// 获取文件信息
 	fileInfo, errInfo := file.Stat()
 	if errInfo != nil {
-		return "", errInfo
+		return nil, errInfo
 	}
 	// 读取文件内容
 	keyBytes := make([]byte, fileInfo.Size())
@@ -180,12 +180,17 @@ func (r *RsaEncrypt) RsaDecrypt(srcByte []byte, filePath string) (string, error)
 	// x509解码
 	privateKey, errPb := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if errPb != nil {
-		return "", errPb
+		return nil, errPb
 	}
 	// 进行解密
 	retByte, errRet := rsa.DecryptPKCS1v15(rand.Reader, privateKey, srcByte)
 	if errRet != nil {
-		return "", errRet
+		return nil, errRet
 	}
-	return base64.StdEncoding.EncodeToString(retByte), nil
+	return retByte, nil
+}
+
+// EncryptString String输出加密后的东西
+func (r *RsaEncrypt) EncryptString(retByte []byte) string {
+	return base64.StdEncoding.EncodeToString(retByte)
 }
