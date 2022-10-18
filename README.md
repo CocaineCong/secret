@@ -20,7 +20,14 @@ go get github.com/CocaineCong/secret
 我们可以在代码中先指定一段特殊字符串`special sign`，并且传入我们的密钥`key`，来构造我们的AES加密对象。\
 我们会基于传进来的` special sign 和 key `进行一个`拼接来进行加密`，解密的时候，只需要用传入**相同的special sign和key**即可。
 
-如以下代码:
+>目前 AES 只支持 16位 的加密，后续我们会增加`对应密钥的长度`， ` specialSign 和 key 加起来的长度小于 对应所需要加密的密钥的长度 `，就会进行填充，并且`多于16位`，就会对根据密钥的长度是奇数还是偶数来判断，去除前缀还是后缀，来凑出对应密钥所需要的位数长度。
+
+如果 specialSign 和 key 加起来的长度小于 对应所需要加密的密钥的长度 ，我们提醒，因为公开了部分密钥，容易被攻破有风险。
+```
+the length of specialSign and key less 24 
+```
+
+示例代码如下:
 
 ```go
 specialSign := "][;,[2psldp0981zx;./"
@@ -35,6 +42,12 @@ str := aesEncrypt.SecretEncrypt("this is a secret")
 fmt.Println(str)
 ans := aesEncrypt.SecretDecrypt(str)
 fmt.Println(ans)
+```
+
+结果如下：
+```go
+14be940cf428be2f5432018e3c885370029a0412d4b6be2d8fc96f33b02905f4
+this is a secret
 ```
 
 这样我们就完成了一次加解密了。
@@ -52,18 +65,44 @@ rsa := NewRsaEncrypt(RsaBits1024, "", "", "", "")
 _ = rsa.SaveRsaKey() // 保存公私钥
 ```
 
-对密钥进行加解密，最好存储byte类型，因为string之后可能会乱码。
+使用公钥对这条语句进行加密
 
 ```go
 secret, _ := rsa.RsaEncrypt("this is a secret", rsa.PublishKeyPath)
 fmt.Println("secret", secret)
+```
+
+注意加密过后的我们获取的是一个` byte 类型`，如果我们想要 string 类型，我们就需要执行下面一个代码进行转换，转成string类型。
+
+```go
+srcStr := rsa.EncryptString(secret)
+```
+
+当然我们加密同样也需要传入 byte 类型，所以要对这个 string 类型转成 byte 类型。
+
+```go
+srcByte := rsa.DecryptByte(srcStr)
+```
+
+转成byte类型之后，我们才进行解密
+
+```go
 ans, _ := rsa.RsaDecrypt(secret, rsa.PrivateKeyPath)
-fmt.Println(string(ans))
+fmt.Println(ans)
+```
+
+这次返回的是string类型的了
+
+结果如下：
+
+```go
+src aUpVbJqOYvcDil7PmGRZ5iaOJ1oAhWE84uqlUZ5REqZFTW/p/enSTrA/dSGC9puHWuVesFTkYAl5dJtfNAHlCdODOP9xzj1gSQVSQblPFxUnRq1DwSgI3Y4ktApicuD26Pm5ViC5rYP9uCqNTo6Ewo1QQhs+c25EVNOzFHijYQ4=
+ans this is a secret
 ```
 
 # 开源共建
 
-**我们非常欢迎感兴趣的开发者一起加入，共同维护这个secret包！**
+**非常欢迎感兴趣的开发者一起加入，共同维护这个secret包！**
 
 **`coding make secret secret`**
 
