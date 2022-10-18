@@ -160,16 +160,16 @@ func (r *RsaEncrypt) RsaEncrypt(src, filePath string) ([]byte, error) {
 }
 
 // RsaDecrypt 解密
-func (r *RsaEncrypt) RsaDecrypt(srcByte []byte, filePath string) ([]byte, error) {
+func (r *RsaEncrypt) RsaDecrypt(srcByte []byte, filePath string) (string, error) {
 	// 打开文件
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	// 获取文件信息
 	fileInfo, errInfo := file.Stat()
 	if errInfo != nil {
-		return nil, errInfo
+		return "", errInfo
 	}
 	// 读取文件内容
 	keyBytes := make([]byte, fileInfo.Size())
@@ -180,17 +180,22 @@ func (r *RsaEncrypt) RsaDecrypt(srcByte []byte, filePath string) ([]byte, error)
 	// x509解码
 	privateKey, errPb := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if errPb != nil {
-		return nil, errPb
+		return "", errPb
 	}
 	// 进行解密
 	retByte, errRet := rsa.DecryptPKCS1v15(rand.Reader, privateKey, srcByte)
 	if errRet != nil {
-		return nil, errRet
+		return "", errRet
 	}
-	return retByte, nil
+	return string(retByte), nil
 }
 
 // EncryptString String输出加密后的东西
 func (r *RsaEncrypt) EncryptString(retByte []byte) string {
 	return base64.StdEncoding.EncodeToString(retByte)
+}
+
+func (r *RsaEncrypt) DecryptByte(src string) []byte {
+	b, _ := base64.StdEncoding.DecodeString(src)
+	return b
 }
