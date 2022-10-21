@@ -13,11 +13,11 @@ BenchmarkNew3DesEncrypt-8          95594             12498 ns/op
 func BenchmarkNewAesEncrypt(b *testing.B) {
 	specialSign := "][;,[2psldp0981zx;./"
 	key := "458796" // key 密钥
-	aesEncrypt, _ := NewAesEncrypt(specialSign, key)
+	aesEncrypt, _ := NewAesEncrypt(specialSign, key, "", AesEncrypt192)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ans := aesEncrypt.SecretEncrypt("this is a secret", 12)
-		_ = aesEncrypt.SecretDecrypt(ans, 12)
+		ans := aesEncrypt.SecretEncrypt("this is a secret")
+		_ = aesEncrypt.SecretDecrypt(ans)
 	}
 	b.StopTimer()
 }

@@ -5,48 +5,98 @@ import (
 	"crypto/cipher"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/spf13/cast"
 )
 
-const AesKeyLength = 16
+type AesKeyType uint64   // 密钥类型
+type AesModelType string // 加密模式类型
+
+const (
+
+	// 密钥长度
+	AesKeyLength128 = 16
+	AesKeyLength192 = 24
+	AesKeyLength256 = 32
+
+	// IVLength 初始向量 16 字节
+	IVLength = 16
+)
+
+// AES 密钥类型
+const (
+	AesEncrypt128 AesKeyType = 128
+	AesEncrypt192 AesKeyType = 192
+	AesEncrypt256 AesKeyType = 256
+)
+
+//
 
 var AesBaseSpecialSign = "!@a%$bc.de,l%$fgqweruriskn&#@xl784zm321apgiw"
 var AesBaseSpecialSignLength = len(AesBaseSpecialSign)
 
 type AesEncrypt struct {
-	SpecialSign string // 加解密都会基于这一串字符,如果没有会基于 AesBaseSpecialSign.
-	Key         string // 密钥，建议是 5-8位的密钥
+	SpecialSign  string  // 加解密都会基于这一串字符,如果没有会基于 AesBaseSpecialSign.
+	Key          string  // 密钥，建议是 5-8位的密钥
+	IV           string  // 初始向量 16 字节
+	AesType      AesType // 加密类型
+	AesKey       []byte  // AES 密钥
+	AesKeyLength int     // 加密长度
 }
 
-func NewAesEncrypt(specialSign, key string) (*AesEncrypt, error) {
+func NewAesEncrypt(specialSign, key, iv string, aesType AesType) (*AesEncrypt, error) {
 	if specialSign == "" {
 		specialSign = AesBaseSpecialSign
 	}
+
+	var aesKeyLength int
+
+	switch aesType {
+	case AesEncrypt128:
+		aesKeyLength = AesKeyLength128
+	case AesEncrypt192:
+		aesKeyLength = AesKeyLength192
+	case AesEncrypt256:
+		aesKeyLength = AesKeyLength256
+	default:
+		return nil, errors.New("AES Type Error")
+	}
+
 	specialSignLength := len(specialSign)
-	if specialSignLength+len(key) < AesKeyLength {
-		log.Printf("the length of specialSign and key less %v ", TripleDesKeyLength)
+	if specialSignLength+len(key) < aesKeyLength {
+		log.Printf("【WARN】 the length of specialSign and key less %v ", aesKeyLength)
 		if specialSignLength%2 == 0 {
-			specialSign += AesBaseSpecialSign[:AesKeyLength-len(specialSign)]
+			specialSign += AesBaseSpecialSign[:aesKeyLength-len(specialSign)]
 		} else {
-			specialSign += AesBaseSpecialSign[AesBaseSpecialSignLength-AesKeyLength:]
+			specialSign += AesBaseSpecialSign[AesBaseSpecialSignLength-aesKeyLength:]
 		}
 	}
-	if specialSignLength > AesKeyLength {
+	if specialSignLength > aesKeyLength {
 		if specialSignLength%2 == 0 {
-			specialSign = specialSign[:AesKeyLength+1]
+			specialSign = specialSign[:aesKeyLength+1]
 		} else {
-			specialSign = specialSign[len(specialSign)-AesKeyLength:]
+			specialSign = specialSign[len(specialSign)-aesKeyLength:]
 		}
 	}
 	if key == "" {
 		return nil, errors.New("need the key to encrypt, please add it. ")
 	}
+
+	if iv == "" {
+		iv = specialSign + key
+	}
+
+	if len(iv) > IVLength {
+		iv = iv[:IVLength]
+	}
+
 	return &AesEncrypt{
-		SpecialSign: specialSign,
-		Key:         key,
+		SpecialSign:  specialSign,
+		Key:          key,
+		IV:           iv,
+		AesType:      aesType,
+		AesKeyLength: aesKeyLength,
 	}, nil
 }
 
@@ -59,79 +109,60 @@ func (a *AesEncrypt) getPrefix(length int) string {
 }
 
 // GenerateAesKey 生成AES密钥
-func (a *AesEncrypt) generateAesKey(id interface{}) []byte {
-	idStr := cast.ToString(id)
-	length := AesKeyLength - len(idStr) - len(a.Key)
-	buf := make([]byte, 0, AesKeyLength)
+func (a *AesEncrypt) generateAesKey() []byte {
+	length := a.AesKeyLength - len(a.Key)
+	buf := make([]byte, 0, a.AesKeyLength)
 	prefix := a.getPrefix(length)
 	buf = append(buf, []byte(prefix)...)
-	buf = append(buf, []byte(idStr)...)
 	buf = append(buf, []byte(a.Key)...)
 	return buf
 }
 
 // SecretEncrypt 加密
-func (a *AesEncrypt) SecretEncrypt(secret interface{}, fields ...interface{}) string {
-	number := 0
-	for i := range fields {
-		number += fields[i].(int)
-	}
+func (a *AesEncrypt) SecretEncrypt(secret interface{}) string {
 	if secret != "" {
-		aesKey := a.generateAesKey(number)
-		ans, _ := a.aesEncrypt(cast.ToString(secret), aesKey)
+		a.AesKey = a.generateAesKey()
+		ans, _ := a.aesEncrypt(cast.ToString(secret))
 		return ans
 	}
 	return ""
 }
 
 // SecretDecrypt 解密
-func (a *AesEncrypt) SecretDecrypt(secret interface{}, fields ...interface{}) string {
-	number := 0
-	for i := range fields {
-		number += fields[i].(int)
-	}
+func (a *AesEncrypt) SecretDecrypt(secret interface{}) string {
 	if secret != "" {
-		aesKey := a.generateAesKey(number)
-		b, _ := a.aesDecrypt(cast.ToString(secret), aesKey)
+		a.AesKey = a.generateAesKey()
+		b, _ := a.aesDecrypt(cast.ToString(secret))
 		return string(b)
 	}
 	return ""
 }
 
 // AesEncrypt AES加密
-func (a *AesEncrypt) aesEncrypt(encodeStr string, key []byte) (string, error) {
-	encodeByte := []byte(encodeStr)
-	// 根据key，生成密文
-	block, err := aes.NewCipher(key)
+func (a *AesEncrypt) aesEncrypt(encodeStr string) (string, error) {
+	bPlaintext := pkcs5Padding([]byte(encodeStr), aes.BlockSize)
+	block, err := aes.NewCipher(a.AesKey)
 	if err != nil {
 		return "", err
 	}
-
-	blockSize := block.BlockSize()
-	encodeByte = pkcs5Padding(encodeByte, blockSize)
-
-	blockMode := cipher.NewCBCEncrypter(block, key)
-	crypted := make([]byte, len(encodeByte))
-	blockMode.CryptBlocks(crypted, encodeByte)
-
-	hexStr := fmt.Sprintf("%x", crypted)
-	return hexStr, nil
+	cipherText := make([]byte, len(bPlaintext))
+	encryptMode := cipher.NewCBCEncrypter(block, []byte(a.IV))
+	encryptMode.CryptBlocks(cipherText, bPlaintext)
+	return hex.EncodeToString(cipherText), nil
 }
 
 // AesDecrypt AES 解密
-func (a *AesEncrypt) aesDecrypt(decodeStr string, key []byte) ([]byte, error) {
+func (a *AesEncrypt) aesDecrypt(decodeStr string) ([]byte, error) {
 	decodeBytes, err := hex.DecodeString(decodeStr)
 	if err != nil {
 		return nil, err
 	}
-	block, err := aes.NewCipher(key)
+	block, err := aes.NewCipher(a.AesKey)
 	if err != nil {
 		return nil, err
 	}
-	blockMode := cipher.NewCBCDecrypter(block, key)
-	origData := make([]byte, len(decodeBytes))
+	blockMode := cipher.NewCBCDecrypter(block, []byte(a.IV))
 
-	blockMode.CryptBlocks(origData, decodeBytes)
-	origData = pkcs5UnPadding(origData)
-	return origData, nil
+	blockMode.CryptBlocks(decodeBytes, decodeBytes)
+	return pkcs5UnPadding(decodeBytes), nil
 }
