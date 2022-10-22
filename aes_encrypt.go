@@ -14,7 +14,6 @@ type AesKeyType uint64   // 密钥类型
 type AesModelType string // 加密模式类型
 
 const (
-
 	// 密钥长度
 	AesKeyLength128 = 16
 	AesKeyLength192 = 24
@@ -31,28 +30,39 @@ const (
 	AesEncrypt256 AesKeyType = 256
 )
 
-//
+// AES 加密模式
+const (
+	AesModelTypeCBC AesModelType = "CBC" // Cipher Block Chaining
+	AesModelTypeCFB AesModelType = "CFB" // Cipher FeedBack
+	AesModelTypeCTR AesModelType = "CTR" // Counter
+	AesModelTypeOFB AesModelType = "OFB" // Output FeedBack
+)
 
 var AesBaseSpecialSign = "!@a%$bc.de,l%$fgqweruriskn&#@xl784zm321apgiw"
 var AesBaseSpecialSignLength = len(AesBaseSpecialSign)
 
 type AesEncrypt struct {
-	SpecialSign  string  // 加解密都会基于这一串字符,如果没有会基于 AesBaseSpecialSign.
-	Key          string  // 密钥，建议是 5-8位的密钥
-	IV           string  // 初始向量 16 字节
-	AesType      AesType // 加密类型
-	AesKey       []byte  // AES 密钥
-	AesKeyLength int     // 加密长度
+	SpecialSign string // 加解密都会基于这一串字符,如果没有会基于 AesBaseSpecialSign.
+	Key         string // 密钥，建议是 5-8位的密钥
+
+	IV string // 初始向量 16 字节
+
+	AesModeType AesModelType // 加密类型
+
+	AesKeyType   AesKeyType // 加密类型
+	AesKey       []byte     // AES 密钥
+	AesKeyLength int        // 加密长度
+
+	PlainTextLength int // 加密的长度
 }
 
-func NewAesEncrypt(specialSign, key, iv string, aesType AesType) (*AesEncrypt, error) {
+func NewAesEncrypt(specialSign, key, iv string, aesKeyType AesKeyType, aesModelType AesModelType) (*AesEncrypt, error) {
 	if specialSign == "" {
 		specialSign = AesBaseSpecialSign
 	}
 
 	var aesKeyLength int
-
-	switch aesType {
+	switch aesKeyType {
 	case AesEncrypt128:
 		aesKeyLength = AesKeyLength128
 	case AesEncrypt192:
@@ -60,7 +70,7 @@ func NewAesEncrypt(specialSign, key, iv string, aesType AesType) (*AesEncrypt, e
 	case AesEncrypt256:
 		aesKeyLength = AesKeyLength256
 	default:
-		return nil, errors.New("AES Type Error")
+		return nil, errors.New("AES Key Type Error")
 	}
 
 	specialSignLength := len(specialSign)
@@ -95,7 +105,8 @@ func NewAesEncrypt(specialSign, key, iv string, aesType AesType) (*AesEncrypt, e
 		SpecialSign:  specialSign,
 		Key:          key,
 		IV:           iv,
-		AesType:      aesType,
+		AesModeType:  aesModelType,
+		AesKeyType:   aesKeyType,
 		AesKeyLength: aesKeyLength,
 	}, nil
 }
@@ -122,7 +133,9 @@ func (a *AesEncrypt) generateAesKey() []byte {
 func (a *AesEncrypt) SecretEncrypt(secret interface{}) string {
 	if secret != "" {
 		a.AesKey = a.generateAesKey()
-		ans, _ := a.aesEncrypt(cast.ToString(secret))
+		str := cast.ToString(secret)
+		a.PlainTextLength = len(str)
+		ans, _ := a.aesEncrypt(str)
 		return ans
 	}
 	return ""
@@ -133,36 +146,85 @@ func (a *AesEncrypt) SecretDecrypt(secret interface{}) string {
 	if secret != "" {
 		a.AesKey = a.generateAesKey()
 		b, _ := a.aesDecrypt(cast.ToString(secret))
-		return string(b)
+		return b
 	}
 	return ""
 }
 
 // AesEncrypt AES加密
 func (a *AesEncrypt) aesEncrypt(encodeStr string) (string, error) {
-	bPlaintext := pkcs5Padding([]byte(encodeStr), aes.BlockSize)
 	block, err := aes.NewCipher(a.AesKey)
 	if err != nil {
 		return "", err
 	}
-	cipherText := make([]byte, len(bPlaintext))
-	encryptMode := cipher.NewCBCEncrypter(block, []byte(a.IV))
-	encryptMode.CryptBlocks(cipherText, bPlaintext)
-	return hex.EncodeToString(cipherText), nil
+	switch a.AesModeType {
+	case AesModelTypeCBC:
+		return a.aesEncryptCBC(encodeStr, block)
+	case AesModelTypeCFB:
+		return a.aesEncryptCFB(encodeStr, block)
+	case AesModelTypeCTR:
+		//mode = cipher.NewCTR(block, []byte(a.IV))
+	case AesModelTypeOFB:
+		//mode = cipher.NewOFB(block, []byte(a.IV))
+	}
+	return "", nil
 }
 
 // AesDecrypt AES 解密
-func (a *AesEncrypt) aesDecrypt(decodeStr string) ([]byte, error) {
+func (a *AesEncrypt) aesDecrypt(decodeStr string) (string, error) {
 	decodeBytes, err := hex.DecodeString(decodeStr)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	block, err := aes.NewCipher(a.AesKey)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	blockMode := cipher.NewCBCDecrypter(block, []byte(a.IV))
 
+	switch a.AesModeType {
+	case AesModelTypeCBC:
+		return a.aesDecryptCBC(decodeBytes, block)
+	case AesModelTypeCFB:
+		return a.aesDecryptCFB(decodeBytes, block)
+	case AesModelTypeCTR:
+		//mode = cipher.NewCTR(block, []byte(a.IV))
+	case AesModelTypeOFB:
+		//mode = cipher.NewOFB(block, []byte(a.IV))
+	}
+	return "", nil
+}
+
+// aesEncryptCBC CBC 模式的加密
+func (a *AesEncrypt) aesEncryptCBC(encodeStr string, block cipher.Block) (string, error) {
+	encodeByte := []byte(encodeStr)
+	encodeByte = pkcs5Padding(encodeByte, block.BlockSize())
+	blockMode := cipher.NewCBCEncrypter(block, []byte(a.IV))
+	crypted := make([]byte, len(encodeByte))
+	blockMode.CryptBlocks(crypted, encodeByte)
+	return hex.EncodeToString(crypted), nil
+}
+
+// aesDecryptCBC CBC 模式的解密
+func (a *AesEncrypt) aesDecryptCBC(decodeBytes []byte, block cipher.Block) (string, error) {
+	blockMode := cipher.NewCBCDecrypter(block, []byte(a.IV))
 	blockMode.CryptBlocks(decodeBytes, decodeBytes)
-	return pkcs5UnPadding(decodeBytes), nil
+	return string(pkcs5UnPadding(decodeBytes)), nil
+}
+
+// aesEncryptCFB CFB 模式的加密
+func (a *AesEncrypt) aesEncryptCFB(encodeStr string, block cipher.Block) (string, error) {
+	cipherText := make([]byte, a.PlainTextLength)
+	cfb := cipher.NewCFBEncrypter(block, []byte(a.IV))
+	copy(cipherText, encodeStr)
+	cfb.XORKeyStream(cipherText, cipherText)
+	return hex.EncodeToString(cipherText), nil
+}
+
+// aesDecryptCFB CFB 模式的解密
+func (a *AesEncrypt) aesDecryptCFB(ciphertext []byte, block cipher.Block) (string, error) {
+	cfbdec := cipher.NewCFBDecrypter(block, []byte(a.IV))
+	plaintextCopy := make([]byte, a.PlainTextLength)
+	copy(plaintextCopy, ciphertext)
+	cfbdec.XORKeyStream(plaintextCopy, plaintextCopy)
+	return string(plaintextCopy), nil
 }
