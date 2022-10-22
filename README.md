@@ -20,22 +20,27 @@ go get github.com/CocaineCong/secret
 我们可以在代码中先指定一段特殊字符串`special sign`，并且传入我们的密钥`key`，来构造我们的AES加密对象。\
 我们会基于传进来的` special sign 和 key `进行一个`拼接来进行加密`，解密的时候，只需要用传入**相同的special sign和key**即可。
 
->目前 AES 只支持 16位 的加密，后续我们会增加`对应密钥的长度`， ` specialSign 和 key 加起来的长度小于 对应所需要加密的密钥的长度 `，就会进行填充，并且`多于16位`，就会对根据密钥的长度是奇数还是偶数来判断，去除前缀还是后缀，来凑出对应密钥所需要的位数长度。
+> ` specialSign 和 key 加起来的长度小于 对应所需要加密的密钥的长度 `，就会进行填充，并且`多于对应密钥的位数`，就会对根据密钥的长度是奇数还是偶数来判断，去除前缀还是后缀，来凑出对应密钥所需要的位数长度。
 
-如果 specialSign 和 key 加起来的长度小于 对应所需要加密的密钥的长度 ，我们提醒，因为公开了部分密钥，容易被攻破有风险。
+如果 specialSign 和 key 加起来的长度小于 对应所需要加密的密钥的长度 。**我们提醒，因为公开了部分密钥，容易被攻破有风险。**
 ```
 the length of specialSign and key less 24 
 ```
 
-示例代码如下:
+另外我们可以指定AES加密的长度：AES-128、AES-192、AES-256。\
+以及加密的模式：BCB、CFB、CTR、OFB。后续我们会新增更多的加密模式。
+
+示例代码如下:\
+我们传入 specialSign、key、iv(固定16位)、选择加密的密钥长度，选择加密的模式。\
+如果不想传入 iv 初始向量，我们就默认是密钥的16位。
 
 ```go
 specialSign := "][;,[2psldp0981zx;./"
 key := "458796" // key 密钥
-aesEncrypt, _ := NewAesEncrypt(specialSign, key) // 构建一个aes加密器
+aesEncrypt, _ := NewAesEncrypt(specialSign, key, "", AesEncrypt128, AesModeTypeCTR)
 ```
 
-再传入我们的所需要加密的对象即可,目前只封装了CBC模式,后续我们会支持更多的模式。
+具体加解密过程如下：
 
 ```go
 str := aesEncrypt.SecretEncrypt("this is a secret")
@@ -45,16 +50,45 @@ fmt.Println(ans)
 ```
 
 结果如下：
+
 ```go
 14be940cf428be2f5432018e3c885370029a0412d4b6be2d8fc96f33b02905f4
 this is a secret
 ```
 
 这样我们就完成了一次加解密了。
+## DES & 3DES
 
-DES、3DES也是类似的
+DES、3DES 就没有支持那么多的模式了，**因为这两种算法其实都已经是不安全的了，** 但是为大家提供更多的选择，才放在这里的。
 
-# RSA
+比较简约，传入 specialSign 和 key 就可以构造 DES加密对象 了　
+
+```go
+specialSign := "11111111111"
+key := "458796" // key 密钥
+des, _ := NewDesEncrypt(specialSign, key)
+```
+
+加解密
+
+```go
+str, err := des.SecretEncrypt("this is a secret")
+if err != nil {
+    fmt.Println("Err", err)
+}
+fmt.Println(str)
+ans, _ := des.SecretDecrypt(str)
+fmt.Println(ans)
+```
+
+结果如下:
+
+```go
+9c0e547c7eae91b2c7d84527fc3170af52ec01a914f9bf60
+this is a secret
+```
+
+## RSA
 
 RSA 我们需要指定密钥的长度，只能选择规定的密钥长度，在构建对象的时候，可以传入公私钥的名字和路径。如果没有传入名字，那么就是默认公钥是`publish.pem`，私钥是`private.pem`。如果没有传入路径，将会`默认放在当前工作目录的路径下`
 
