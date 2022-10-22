@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/spf13/cast"
 )
@@ -23,27 +22,16 @@ type TripleDesEncrypt struct {
 }
 
 func NewTripleDesEncrypt(specialSign, key string) (*TripleDesEncrypt, error) {
-	if specialSign == "" {
-		specialSign = TripleDesBaseSpecialSign
-	}
-	specialSignLength := len(specialSign)
-	if specialSignLength+len(key) < TripleDesKeyLength { // 小于24位填充
-		log.Printf("the length of specialSign and key less %v ", TripleDesKeyLength)
-		if specialSignLength%2 == 0 {
-			specialSign += TripleDesBaseSpecialSign[:TripleDesKeyLength-specialSignLength]
-		} else {
-			specialSign += TripleDesBaseSpecialSign[TripleDesBaseSpecialSignLength-specialSignLength:]
-		}
-	} else if specialSignLength > TripleDesKeyLength { // 大于24位去除
-		if specialSignLength%2 == 0 {
-			specialSign = specialSign[:TripleDesKeyLength+1]
-		} else {
-			specialSign = specialSign[specialSignLength-TripleDesKeyLength:]
-		}
-	}
 	if key == "" {
 		return nil, errors.New("need the key to encrypt, please add it. ")
 	}
+
+	if specialSign == "" {
+		specialSign = TripleDesBaseSpecialSign
+	}
+
+	specialSign = formatSpecialSign(specialSign, key, TripleDesKeyLength)
+
 	return &TripleDesEncrypt{
 		SpecialSign: specialSign,
 		Key:         key,

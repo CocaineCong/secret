@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/spf13/cast"
 )
@@ -22,27 +21,16 @@ type DesEncrypt struct {
 }
 
 func NewDesEncrypt(specialSign, key string) (*DesEncrypt, error) {
-	if specialSign == "" {
-		specialSign = DesBaseSpecialSign
-	}
-	specialSignLength := len(specialSign)
-	if specialSignLength+len(key) < DesKeyLength { // 小于8位填充
-		if specialSignLength%2 == 0 {
-			log.Printf("the length of specialSign and key less %v ", DesKeyLength)
-			specialSign += DesBaseSpecialSign[:DesKeyLength-specialSignLength]
-		} else {
-			specialSign += DesBaseSpecialSign[DesBaseSpecialSignLength-specialSignLength:]
-		}
-	} else if specialSignLength > DesKeyLength { // 大于8位去除
-		if specialSignLength%2 == 0 {
-			specialSign = specialSign[:DesKeyLength+1]
-		} else {
-			specialSign = specialSign[specialSignLength-DesKeyLength:]
-		}
-	}
 	if key == "" {
 		return nil, errors.New("need the key to encrypt, please add it. ")
 	}
+
+	if specialSign == "" {
+		specialSign = DesBaseSpecialSign
+	}
+
+	specialSign = formatSpecialSign(specialSign, key, DesKeyLength)
+
 	return &DesEncrypt{
 		SpecialSign: specialSign,
 		Key:         key,

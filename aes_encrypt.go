@@ -5,7 +5,6 @@ import (
 	"crypto/cipher"
 	"encoding/hex"
 	"errors"
-	"log"
 
 	"github.com/spf13/cast"
 )
@@ -57,6 +56,11 @@ type AesEncrypt struct {
 }
 
 func NewAesEncrypt(specialSign, key, iv string, aesKeyType AesKeyType, aesModeType AesModeType) (*AesEncrypt, error) {
+
+	if key == "" {
+		return nil, errors.New("need the key to encrypt, please add it. ")
+	}
+
 	if specialSign == "" {
 		specialSign = AesBaseSpecialSign
 	}
@@ -73,25 +77,7 @@ func NewAesEncrypt(specialSign, key, iv string, aesKeyType AesKeyType, aesModeTy
 		return nil, errors.New("AES Key Type Error")
 	}
 
-	specialSignLength := len(specialSign)
-	if specialSignLength+len(key) < aesKeyLength {
-		log.Printf("【WARN】 the length of specialSign and key less %v ", aesKeyLength)
-		if specialSignLength%2 == 0 {
-			specialSign += AesBaseSpecialSign[:aesKeyLength-len(specialSign)]
-		} else {
-			specialSign += AesBaseSpecialSign[AesBaseSpecialSignLength-aesKeyLength:]
-		}
-	}
-	if specialSignLength > aesKeyLength {
-		if specialSignLength%2 == 0 {
-			specialSign = specialSign[:aesKeyLength+1]
-		} else {
-			specialSign = specialSign[len(specialSign)-aesKeyLength:]
-		}
-	}
-	if key == "" {
-		return nil, errors.New("need the key to encrypt, please add it. ")
-	}
+	specialSign = formatSpecialSign(specialSign, key, aesKeyLength)
 
 	if iv == "" {
 		iv = specialSign + key
