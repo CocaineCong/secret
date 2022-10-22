@@ -6,8 +6,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/spf13/cast"
 	"log"
+
+	"github.com/spf13/cast"
 )
 
 const TripleDesKeyLength = 24
