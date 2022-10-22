@@ -13,9 +13,6 @@ import (
 const TripleDesKeyLength = 24
 const TripleDesKeyBlock = 8
 
-var TripleDesBaseSpecialSign = "!@abc$qwefgr.#n3@zmde,l%uri&%18$xl7g42askpiw"
-var TripleDesBaseSpecialSignLength = len(TripleDesBaseSpecialSign)
-
 type TripleDesEncrypt struct {
 	SpecialSign string // 加解密都会基于这一串字符,如果没有会基于 TripleDesBaseSpecialSign.
 	Key         string // 密钥，建议是 5-8位的密钥
@@ -27,7 +24,7 @@ func NewTripleDesEncrypt(specialSign, key string) (*TripleDesEncrypt, error) {
 	}
 
 	if specialSign == "" {
-		specialSign = TripleDesBaseSpecialSign
+		specialSign = BaseSpecialSign
 	}
 
 	specialSign = formatSpecialSign(specialSign, key, TripleDesKeyLength)

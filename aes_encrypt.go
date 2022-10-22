@@ -37,9 +37,6 @@ const (
 	AesModeTypeOFB AesModeType = "OFB" // Output FeedBack
 )
 
-var AesBaseSpecialSign = "!@a%$bc.de,l%$fgqweruriskn&#@xl784zm321apgiw"
-var AesBaseSpecialSignLength = len(AesBaseSpecialSign)
-
 type AesEncrypt struct {
 	SpecialSign string // 加解密都会基于这一串字符,如果没有会基于 AesBaseSpecialSign.
 	Key         string // 密钥，建议是 5-8位的密钥
@@ -62,7 +59,7 @@ func NewAesEncrypt(specialSign, key, iv string, aesKeyType AesKeyType, aesModeTy
 	}
 
 	if specialSign == "" {
-		specialSign = AesBaseSpecialSign
+		specialSign = BaseSpecialSign
 	}
 
 	var aesKeyLength int

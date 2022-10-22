@@ -12,9 +12,6 @@ import (
 
 const DesKeyLength = 8
 
-var DesBaseSpecialSign = "!%$brgil%$kn&weruxl7c.de,fq8zm32#@1a4pgiw@a"
-var DesBaseSpecialSignLength = len(DesBaseSpecialSign)
-
 type DesEncrypt struct {
 	SpecialSign string // 加解密都会基于这一串字符,如果没有会基于 DesBaseSpecialSign.
 	Key         string // 密钥，建议是 5-8位的密钥
@@ -26,7 +23,7 @@ func NewDesEncrypt(specialSign, key string) (*DesEncrypt, error) {
 	}
 
 	if specialSign == "" {
-		specialSign = DesBaseSpecialSign
+		specialSign = BaseSpecialSign
 	}
 
 	specialSign = formatSpecialSign(specialSign, key, DesKeyLength)
