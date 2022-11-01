@@ -3,8 +3,11 @@ package secret
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"io"
 
 	"github.com/spf13/cast"
 )
@@ -35,6 +38,7 @@ const (
 	AesModeTypeCFB AesModeType = "CFB" // Cipher FeedBack
 	AesModeTypeCTR AesModeType = "CTR" // Counter
 	AesModeTypeOFB AesModeType = "OFB" // Output FeedBack
+	AesModeTypeECB AesModeType = "ECB" // Electronic Codebook
 )
 
 type AesEncrypt struct {
@@ -118,7 +122,10 @@ func (a *AesEncrypt) SecretEncrypt(secret interface{}) string {
 		a.AesKey = a.generateAesKey()
 		str := cast.ToString(secret)
 		a.PlainTextLength = len(str)
-		ans, _ := a.aesEncrypt(str)
+		ans, err := a.aesEncrypt(str)
+		if err != nil {
+			panic(err)
+		}
 		return ans
 	}
 	return ""
@@ -128,7 +135,10 @@ func (a *AesEncrypt) SecretEncrypt(secret interface{}) string {
 func (a *AesEncrypt) SecretDecrypt(secret interface{}) string {
 	if secret != "" {
 		a.AesKey = a.generateAesKey()
-		b, _ := a.aesDecrypt(cast.ToString(secret))
+		b, err := a.aesDecrypt(cast.ToString(secret))
+		if err != nil {
+			panic(err)
+		}
 		return b
 	}
 	return ""
@@ -146,6 +156,8 @@ func (a *AesEncrypt) aesEncrypt(encodeStr string) (string, error) {
 		return a.aesEncrypterCBC(encodeStr, block)
 	case AesModeTypeCFB:
 		return a.aesEncrypterCFB(encodeStr, block)
+	case AesModeTypeECB:
+		return a.aesEncrypterECB(encodeStr, block)
 	case AesModeTypeCTR:
 		return a.aesEncrypter(encodeStr, block, AesModeTypeCTR)
 	case AesModeTypeOFB:
@@ -156,7 +168,8 @@ func (a *AesEncrypt) aesEncrypt(encodeStr string) (string, error) {
 
 // AesDecrypt AES 解密
 func (a *AesEncrypt) aesDecrypt(decodeStr string) (string, error) {
-	decodeBytes, err := hex.DecodeString(decodeStr)
+	//decodeBytes, err := hex.DecodeString(decodeStr)
+	decodeBytes, err := base64.StdEncoding.DecodeString(decodeStr)
 	if err != nil {
 		return "", err
 	}
@@ -169,7 +182,7 @@ func (a *AesEncrypt) aesDecrypt(decodeStr string) (string, error) {
 	case AesModeTypeCBC:
 		return a.aesDecrypterCBC(decodeBytes, block)
 	case AesModeTypeCFB:
-		return a.aesDecrypterCFB(decodeBytes, block)
+		return a.aesDecrypterCFB(decodeStr, block)
 	case AesModeTypeCTR:
 		return a.aesDecrypter(decodeBytes, block, AesModeTypeCTR)
 	case AesModeTypeOFB:
@@ -185,7 +198,7 @@ func (a *AesEncrypt) aesEncrypterCBC(encodeStr string, block cipher.Block) (stri
 	blockMode := cipher.NewCBCEncrypter(block, []byte(a.IV))
 	crypted := make([]byte, len(encodeByte))
 	blockMode.CryptBlocks(crypted, encodeByte)
-	return hex.EncodeToString(crypted), nil
+	return base64.StdEncoding.EncodeToString(crypted), nil
 }
 
 // aesDecrypterCBC CBC 模式的解密
@@ -197,27 +210,41 @@ func (a *AesEncrypt) aesDecrypterCBC(decodeBytes []byte, block cipher.Block) (st
 
 // aesEncrypterCFB CFB 模式的加密
 func (a *AesEncrypt) aesEncrypterCFB(encodeStr string, block cipher.Block) (string, error) {
-	cipherText := make([]byte, a.PlainTextLength)
-	cfb := cipher.NewCFBEncrypter(block, []byte(a.IV))
-	copy(cipherText, encodeStr)
-	cfb.XORKeyStream(cipherText, cipherText)
-	return hex.EncodeToString(cipherText), nil
+	originData := []byte(encodeStr)
+	encrypted := make([]byte, aes.BlockSize+len(originData))
+	if _, err := io.ReadFull(rand.Reader, []byte(a.IV)); err != nil {
+		panic(err)
+	}
+	stream := cipher.NewCFBEncrypter(block, []byte(a.IV))
+	stream.XORKeyStream(encrypted[aes.BlockSize:], originData)
+	return base64.StdEncoding.EncodeToString(encrypted), nil
 }
 
 // aesDecrypterCFB CFB 模式的解密
-func (a *AesEncrypt) aesDecrypterCFB(decodeBytes []byte, block cipher.Block) (string, error) {
-	plaintextCopy := make([]byte, a.PlainTextLength)
-	m := cipher.NewCFBDecrypter(block, []byte(a.IV))
-	copy(plaintextCopy, decodeBytes)
-	m.XORKeyStream(plaintextCopy, plaintextCopy)
-	return string(plaintextCopy), nil
+func (a *AesEncrypt) aesDecrypterCFB(decodeStr string, block cipher.Block) (string, error) {
+	encrypted, err := base64.StdEncoding.DecodeString(decodeStr)
+	if err != nil {
+		panic(err)
+	}
+	if len(encrypted) < aes.BlockSize {
+		panic("ciphertext too short")
+	}
+	encrypted = encrypted[aes.BlockSize:]
+
+	stream := cipher.NewCFBDecrypter(block, []byte(a.IV))
+	stream.XORKeyStream(encrypted, encrypted)
+	return string(encrypted), nil
+}
+
+func (a *AesEncrypt) aesEncrypterECB() {
+
 }
 
 // aesEncrypter CTR OR OFB 模式的加密
 func (a *AesEncrypt) aesEncrypter(encodeStr string, block cipher.Block, mode AesModeType) (string, error) {
 	cipherText := make([]byte, a.PlainTextLength)
 	m := cipher.NewCTR(block, []byte(a.IV))
-	if mode == AesModeTypeCFB {
+	if mode == AesModeTypeOFB {
 		m = cipher.NewOFB(block, []byte(a.IV))
 	}
 	copy(cipherText, encodeStr)
@@ -228,7 +255,7 @@ func (a *AesEncrypt) aesEncrypter(encodeStr string, block cipher.Block, mode Aes
 // aesDecrypter CTR OR OFB 模式的加密
 func (a *AesEncrypt) aesDecrypter(decodeBytes []byte, block cipher.Block, mode AesModeType) (string, error) {
 	m := cipher.NewCTR(block, []byte(a.IV))
-	if mode == AesModeTypeCFB {
+	if mode == AesModeTypeOFB {
 		m = cipher.NewOFB(block, []byte(a.IV))
 	}
 	plainTextCopy := make([]byte, a.PlainTextLength)
