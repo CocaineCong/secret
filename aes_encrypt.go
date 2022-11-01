@@ -5,11 +5,9 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
-	"io"
-
 	"github.com/spf13/cast"
+	"io"
 )
 
 type AesKeyType uint64  // 密钥类型
@@ -159,9 +157,9 @@ func (a *AesEncrypt) aesEncrypt(encodeStr string) (string, error) {
 	case AesModeTypeECB:
 		return a.aesEncrypterECB(encodeStr, block)
 	case AesModeTypeCTR:
-		return a.aesEncrypter(encodeStr, block, AesModeTypeCTR)
+		return a.aesEncrypterCTR(encodeStr, block)
 	case AesModeTypeOFB:
-		return a.aesEncrypter(encodeStr, block, AesModeTypeOFB)
+		return a.aesEncrypterOFB(encodeStr, block)
 	}
 	return "", nil
 }
@@ -184,9 +182,9 @@ func (a *AesEncrypt) aesDecrypt(decodeStr string) (string, error) {
 	case AesModeTypeCFB:
 		return a.aesDecrypterCFB(decodeStr, block)
 	case AesModeTypeCTR:
-		return a.aesDecrypter(decodeBytes, block, AesModeTypeCTR)
+		return a.aesDecrypterCTR(decodeStr, block)
 	case AesModeTypeOFB:
-		return a.aesDecrypter(decodeBytes, block, AesModeTypeOFB)
+		return a.aesDecrypterOFB(decodeStr, block)
 	}
 	return "", nil
 }
@@ -236,30 +234,60 @@ func (a *AesEncrypt) aesDecrypterCFB(decodeStr string, block cipher.Block) (stri
 	return string(encrypted), nil
 }
 
-func (a *AesEncrypt) aesEncrypterECB() {
+func (a *AesEncrypt) aesEncrypterECB(encodeStr string, block cipher.Block) (string, error) {
+	data := PKCS7Padding([]byte(encodeStr), block.BlockSize())
+	decrypted := make([]byte, len(data))
+	size := block.BlockSize()
 
+	for bs, be := 0, size; bs < len(data); bs, be = bs+size, be+size {
+		block.Encrypt(decrypted[bs:be], data[bs:be])
+	}
+
+	return base64.StdEncoding.EncodeToString(decrypted), nil
 }
 
-// aesEncrypter CTR OR OFB 模式的加密
-func (a *AesEncrypt) aesEncrypter(encodeStr string, block cipher.Block, mode AesModeType) (string, error) {
-	cipherText := make([]byte, a.PlainTextLength)
-	m := cipher.NewCTR(block, []byte(a.IV))
-	if mode == AesModeTypeOFB {
-		m = cipher.NewOFB(block, []byte(a.IV))
+func (a *AesEncrypt) aesDecrypterECB(encodeStr string, block cipher.Block) (string, error) {
+	data, _ := base64.StdEncoding.DecodeString(encodeStr)
+	decrypted := make([]byte, len(data))
+	size := block.BlockSize()
+
+	for bs, be := 0, size; bs < len(data); bs, be = bs+size, be+size {
+		block.Decrypt(decrypted[bs:be], data[bs:be])
 	}
-	copy(cipherText, encodeStr)
-	m.XORKeyStream(cipherText, cipherText)
-	return hex.EncodeToString(cipherText), nil
+
+	return string(PKCS7UnPadding(decrypted)), nil
 }
 
-// aesDecrypter CTR OR OFB 模式的加密
-func (a *AesEncrypt) aesDecrypter(decodeBytes []byte, block cipher.Block, mode AesModeType) (string, error) {
-	m := cipher.NewCTR(block, []byte(a.IV))
-	if mode == AesModeTypeOFB {
-		m = cipher.NewOFB(block, []byte(a.IV))
-	}
-	plainTextCopy := make([]byte, a.PlainTextLength)
-	copy(plainTextCopy, decodeBytes)
-	m.XORKeyStream(plainTextCopy, plainTextCopy)
-	return string(plainTextCopy), nil
+// aesEncrypterCTR CTR 模式的加密
+func (a *AesEncrypt) aesEncrypterCTR(plainText string, block cipher.Block) (string, error) {
+	stream := cipher.NewCTR(block, []byte(a.IV))
+	dst := make([]byte, len(plainText))
+	stream.XORKeyStream(dst, []byte(plainText))
+	return base64.StdEncoding.EncodeToString(dst), nil
+}
+
+// aesDecrypterCTR CTR 模式的加密
+func (a *AesEncrypt) aesDecrypterCTR(decode string, block cipher.Block) (string, error) {
+	plainText, _ := base64.StdEncoding.DecodeString(decode)
+	stream := cipher.NewCTR(block, []byte(a.IV))
+	dst := make([]byte, len(plainText))
+	stream.XORKeyStream(dst, plainText)
+	return string(dst), nil
+}
+
+// aesEncrypterOFB OFB 模式的加密
+func (a *AesEncrypt) aesEncrypterOFB(plainText string, block cipher.Block) (string, error) {
+	stream := cipher.NewOFB(block, []byte(a.IV))
+	dst := make([]byte, len(plainText))
+	stream.XORKeyStream(dst, []byte(plainText))
+	return base64.StdEncoding.EncodeToString(dst), nil
+}
+
+// aesDecrypterOFB OFB 模式的加密
+func (a *AesEncrypt) aesDecrypterOFB(decode string, block cipher.Block) (string, error) {
+	plainText, _ := base64.StdEncoding.DecodeString(decode)
+	stream := cipher.NewOFB(block, []byte(a.IV))
+	dst := make([]byte, len(plainText))
+	stream.XORKeyStream(dst, plainText)
+	return string(dst), nil
 }

@@ -9,9 +9,9 @@ func TestAesSecret(t *testing.T) {
 	specialSign := "123ads12312adasdasda1"
 	key := "458796" // key
 	str := "this is a secret"
-	a := AesEncodeOFB(specialSign, key, str)
+	a := AesEncodeCTR(specialSign, key, str)
 	fmt.Println("a", a)
-	b := AesDecodeOFB(specialSign, key, a)
+	b := AesDecodeCTR(specialSign, key, a)
 	fmt.Println("b", b)
 }
 
@@ -35,6 +35,16 @@ func AesDecodeCBC(specialSign, key, str string) string {
 	return aesEncrypt.SecretDecrypt(str)
 }
 
+func AesEncodeECB(specialSign, key, str string) string {
+	aesEncrypt, _ := NewAesEncrypt(specialSign, key, "", AesEncrypt128, AesModeTypeECB)
+	return aesEncrypt.SecretEncrypt(str)
+}
+
+func AesDecodeECB(specialSign, key, str string) string {
+	aesEncrypt, _ := NewAesEncrypt(specialSign, key, "", AesEncrypt128, AesModeTypeECB)
+	return aesEncrypt.SecretDecrypt(str)
+}
+
 func AesEncodeOFB(specialSign, key, str string) string {
 	aesEncrypt, _ := NewAesEncrypt(specialSign, key, "", AesEncrypt128, AesModeTypeOFB)
 	return aesEncrypt.SecretEncrypt(str)
@@ -42,5 +52,14 @@ func AesEncodeOFB(specialSign, key, str string) string {
 
 func AesDecodeOFB(specialSign, key, str string) string {
 	aesEncrypt, _ := NewAesEncrypt(specialSign, key, "", AesEncrypt128, AesModeTypeOFB)
+	return aesEncrypt.SecretDecrypt(str)
+}
+func AesEncodeCTR(specialSign, key, str string) string {
+	aesEncrypt, _ := NewAesEncrypt(specialSign, key, "", AesEncrypt256, AesModeTypeCTR)
+	return aesEncrypt.SecretEncrypt(str)
+}
+
+func AesDecodeCTR(specialSign, key, str string) string {
+	aesEncrypt, _ := NewAesEncrypt(specialSign, key, "", AesEncrypt256, AesModeTypeCTR)
 	return aesEncrypt.SecretDecrypt(str)
 }
